@@ -18,7 +18,8 @@ export default async function handler(req, res) {
     const guests = rows.map(row => ({
       name: row['Name'] || row['name'] || row['الاسم'] || '',
       name_ar: row['Name AR'] || row['name_ar'] || row['الاسم بالعربي'] || null,
-      phone: String(row['Phone'] || row['phone'] || row['رقم الجوال'] || '').replace(/\s+/g, '')
+      phone: String(row['Phone'] || row['phone'] || row['رقم الجوال'] || '').replace(/\s+/g, ''),
+      max_guests: parseInt(row['Max Guests'] || row['max_guests'] || row['عدد المدعوين'] || 1)
     })).filter(g => g.name && g.phone)
 
     const { data, error } = await supabase

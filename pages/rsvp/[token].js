@@ -10,6 +10,7 @@ export default function RSVPPage() {
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [attendeeCount, setAttendeeCount] = useState(1)
 
   useEffect(() => {
     if (!token) return
@@ -22,21 +23,34 @@ export default function RSVPPage() {
         if (error || !data) setStatus('not_found')
         else {
           setGuest(data)
+          setAttendeeCount(data.max_guests || 1)
           if (data.status !== 'pending') setStatus(data.status)
         }
         setLoading(false)
       })
   }, [token])
 
-  async function respond(response) {
+  async function confirm() {
     setSubmitting(true)
     await supabase
       .from('guests')
-      .update({ status: response, responded_at: new Date().toISOString() })
+      .update({ status: 'confirmed', confirmed_count: attendeeCount, responded_at: new Date().toISOString() })
       .eq('token', token)
-    setStatus(response)
+    setStatus('confirmed')
     setSubmitting(false)
   }
+
+  async function decline() {
+    setSubmitting(true)
+    await supabase
+      .from('guests')
+      .update({ status: 'declined', confirmed_count: 0, responded_at: new Date().toISOString() })
+      .eq('token', token)
+    setStatus('declined')
+    setSubmitting(false)
+  }
+
+  const max = guest?.max_guests || 1
 
   return (
     <>
@@ -77,8 +91,27 @@ export default function RSVPPage() {
         .greeting-en { font-size: 1rem; color: #d4c5b0; font-style: italic; }
         .guest-name { font-size: 1.6rem; color: #f5efe8; margin: 1.5rem 0 0.5rem; font-style: italic; }
         .question-ar { font-family: 'Tajawal', sans-serif; font-size: 1rem; direction: rtl; color: #c9a96e; margin-bottom: 0.3rem; }
-        .question-en { font-size: 0.95rem; color: #c9a96e; margin-bottom: 2rem; }
-        .buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+        .question-en { font-size: 0.95rem; color: #c9a96e; margin-bottom: 1.5rem; }
+        .attendee-box { margin: 1.5rem auto; }
+        .attendee-label-ar { font-family: 'Tajawal', sans-serif; font-size: 0.9rem; direction: rtl; color: #a89880; margin-bottom: 0.3rem; }
+        .attendee-label-en { font-size: 0.85rem; color: #a89880; margin-bottom: 1rem; font-style: italic; }
+        .counter { display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin: 1rem 0; }
+        .counter-btn {
+          width: 40px; height: 40px;
+          border: 1px solid #c9a96e;
+          background: transparent;
+          color: #c9a96e;
+          font-size: 1.4rem;
+          cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          transition: all 0.2s;
+          font-family: 'Cormorant Garamond', serif;
+        }
+        .counter-btn:hover:not(:disabled) { background: rgba(201,169,110,0.15); }
+        .counter-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+        .counter-number { font-size: 2.5rem; font-weight: 300; color: #f5efe8; min-width: 3rem; text-align: center; }
+        .counter-max { font-size: 0.75rem; color: #a89880; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.3rem; }
+        .buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem; }
         .btn {
           padding: 0.9rem 2.5rem;
           font-family: 'Cormorant Garamond', serif;
@@ -98,6 +131,7 @@ export default function RSVPPage() {
         .response-title-ar { font-family: 'Tajawal', sans-serif; font-size: 1.2rem; direction: rtl; color: #c9a96e; margin-bottom: 0.5rem; }
         .response-title-en { font-size: 1.3rem; font-style: italic; color: #f5efe8; margin-bottom: 1rem; }
         .response-msg { font-size: 0.9rem; color: #a89880; font-style: italic; }
+        .response-count { font-size: 1.1rem; color: #c9a96e; margin: 0.5rem 0; }
       `}</style>
 
       <div className="container">
@@ -121,11 +155,27 @@ export default function RSVPPage() {
             <div className="divider" />
             <div className="question-ar">هل ستتشرفون بحضور حفل زفافنا؟</div>
             <div className="question-en">Will you be joining us to celebrate our wedding?</div>
+
+            {max > 1 && (
+              <div className="attendee-box">
+                <div className="attendee-label-ar">كم عدد الحضور من عائلتكم؟</div>
+                <div className="attendee-label-en">How many from your family will attend?</div>
+                <div className="counter">
+                  <button className="counter-btn" onClick={() => setAttendeeCount(c => Math.max(1, c - 1))} disabled={attendeeCount <= 1}>−</button>
+                  <div>
+                    <div className="counter-number">{attendeeCount}</div>
+                    <div className="counter-max">max {max}</div>
+                  </div>
+                  <button className="counter-btn" onClick={() => setAttendeeCount(c => Math.min(max, c + 1))} disabled={attendeeCount >= max}>+</button>
+                </div>
+              </div>
+            )}
+
             <div className="buttons">
-              <button className="btn btn-confirm" onClick={() => respond('confirmed')} disabled={submitting}>
+              <button className="btn btn-confirm" onClick={confirm} disabled={submitting}>
                 {submitting ? '...' : '✓ Attending / سأحضر'}
               </button>
-              <button className="btn btn-decline" onClick={() => respond('declined')} disabled={submitting}>
+              <button className="btn btn-decline" onClick={decline} disabled={submitting}>
                 {submitting ? '...' : '✗ Regrets / لن أتمكن'}
               </button>
             </div>
@@ -137,6 +187,11 @@ export default function RSVPPage() {
             <div className="response-icon">🤍</div>
             <div className="response-title-ar">شكراً لتأكيد حضوركم</div>
             <div className="response-title-en">We look forward to seeing you</div>
+            {guest?.confirmed_count > 0 && (
+              <div className="response-count">
+                {guest.confirmed_count} {guest.confirmed_count === 1 ? 'attendee' : 'attendees'} confirmed
+              </div>
+            )}
             <div className="response-msg">Your attendance has been confirmed. We can't wait to celebrate with you.</div>
           </div>
         )}

@@ -18,6 +18,7 @@ export default function Dashboard() {
     confirmed: guests.filter(g => g.status === 'confirmed').length,
     declined: guests.filter(g => g.status === 'declined').length,
     pending: guests.filter(g => g.status === 'pending').length,
+    headcount: guests.filter(g => g.status === 'confirmed').reduce((sum, g) => sum + (g.confirmed_count || 1), 0),
   }
 
   useEffect(() => { fetchGuests() }, [])
@@ -259,15 +260,15 @@ export default function Dashboard() {
         <div className="stats">
           <div className="stat-card">
             <div className="stat-number">{stats.total}</div>
-            <div className="stat-label">Total Guests</div>
+            <div className="stat-label">Families Invited</div>
           </div>
           <div className="stat-card stat-confirmed">
             <div className="stat-number">{stats.confirmed}</div>
             <div className="stat-label">Confirmed ✓</div>
           </div>
-          <div className="stat-card stat-declined">
-            <div className="stat-number">{stats.declined}</div>
-            <div className="stat-label">Declined ✗</div>
+          <div className="stat-card" style={{border: '1px solid rgba(201,169,110,0.15)', padding: '1.5rem', textAlign: 'center', background: 'rgba(201,169,110,0.03)'}}>
+            <div className="stat-number" style={{color: '#e8c882'}}>{stats.headcount}</div>
+            <div className="stat-label">Total Attendees</div>
           </div>
           <div className="stat-card stat-pending">
             <div className="stat-number">{stats.pending}</div>
@@ -324,6 +325,8 @@ export default function Dashboard() {
                 <th>Name</th>
                 <th>Phone</th>
                 <th>Status</th>
+                <th>Seats</th>
+                <th>Attending</th>
                 <th>Invite Sent</th>
                 <th>Reminders</th>
                 <th></th>
@@ -339,6 +342,8 @@ export default function Dashboard() {
                   </td>
                   <td style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{g.phone}</td>
                   <td><span className={`badge badge-${g.status}`}>{g.status}</span></td>
+                  <td style={{ fontSize: '0.85rem', color: '#a89880', textAlign: 'center' }}>{g.max_guests || 1}</td>
+                  <td style={{ fontSize: '0.85rem', color: '#7cb87c', textAlign: 'center' }}>{g.status === 'confirmed' ? g.confirmed_count || 1 : '—'}</td>
                   <td style={{ fontSize: '0.85rem' }}>{g.invite_sent_at ? new Date(g.invite_sent_at).toLocaleDateString() : <span style={{ color: '#a89880' }}>—</span>}</td>
                   <td style={{ fontSize: '0.85rem', color: '#a89880' }}>{g.reminder_count || 0}</td>
                   <td><button className="delete-btn" onClick={() => handleDeleteGuest(g.id)} title="Remove guest">✕</button></td>

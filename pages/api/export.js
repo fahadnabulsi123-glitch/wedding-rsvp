@@ -16,6 +16,8 @@ export default async function handler(req, res) {
     'Name (Arabic)': g.name_ar || '',
     'Phone': g.phone,
     'Status': g.status,
+    'Allocated Seats': g.max_guests || 1,
+    'Confirmed Attendees': g.confirmed_count || 0,
     'Invite Sent': g.invite_sent_at ? new Date(g.invite_sent_at).toLocaleDateString() : 'No',
     'Responded At': g.responded_at ? new Date(g.responded_at).toLocaleDateString() : '-',
     'Reminders Sent': g.reminder_count || 0
